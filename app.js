@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+const _ = require('lodash');
 // const date = require(__dirname+"/date.js");
 const mongoose = require("mongoose");
 
@@ -9,7 +10,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
-mongoose.connect("mongodb://localhost:27017/todoDB", { useNewUrlParser: true });
+mongoose.connect("mongodb+srv://todo_2217:dugu%40100%26@cluster0.oktgc.mongodb.net/todoDB", { useNewUrlParser: true });
 
 // Defigning Schema For Default TOday PAge
 const todoSchema = mongoose.Schema({
@@ -42,7 +43,6 @@ const listSchema = mongoose.Schema({
 const List = mongoose.model("List", listSchema);
 
 app.get("/", function (req, res) {
-
   Item.find({}, function (err, foundItems) {
     if (err) {
       console.log(err);
@@ -63,7 +63,7 @@ app.get("/", function (req, res) {
 
 app.post("/", (req, res) => {
   let itemName = req.body.newItem;
-  let listName =  req.body.addBtn;
+  let listName = req.body.addBtn;
   const item = new Item({
     name: itemName,
   });
@@ -71,23 +71,20 @@ app.post("/", (req, res) => {
     item.save();
     res.redirect("/");
   } else {
-    List.findOne({name: listName}, (err, foundItem) => {
-      console.log(foundItem);
+    List.findOne({ name: listName }, (err, foundItem) => {
       foundItem.items.push(item);
       foundItem.save((err) => {
-          if(err) console.log(err);
-          else 
-          res.redirect('/' + listName);
+        if (err) console.log(err);
+        else res.redirect("/" + listName);
       });
-    })
+    });
   }
- 
 });
 
 //get for Custom todo list
 app.get("/:customListName", (req, res) => {
-  let paraName = req.params.customListName;
-  List.findOne({name: paraName}, (err, foundlist) => {
+  let paraName =_.capitalize(req.params.customListName);
+  List.findOne({ name: paraName }, (err, foundlist) => {
     if (!err) {
       if (!foundlist) {
         const list = new List({
@@ -95,32 +92,48 @@ app.get("/:customListName", (req, res) => {
           items: defaultItems,
         });
         list.save((err) => {
-          if(err) res.redirect('/');
-          else res.redirect('/' + paraName);
+          if (err) res.redirect("/");
+          else res.redirect("/" + paraName);
         });
       } else {
-       res.render('list', { listTitle: foundlist.name, NewItem: foundlist.items });
+        res.render("list", {
+          listTitle: foundlist.name,
+          NewItem: foundlist.items,
+        });
       }
-    } 
+    }
   });
 });
 
-
-//Deleting items 
+//Deleting items
 app.post("/del", (req, res) => {
   const itemID = req.body.checkbox;
-  console.log(itemID);
-  Item.findByIdAndRemove(itemID, (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log("Deleted Item SuccessFully !");
-    }
-    res.redirect("/");
-  });
+  const titleName = req.body.titleName;
+  
+  if (titleName === "Today") {
+    Item.findByIdAndRemove(itemID, (err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log("Deleted Item SuccessFully !");
+      }
+      res.redirect("/");
+    });
+  } else {
+    List.findOneAndUpdate(
+      { name: titleName },
+      { $pull: { items: { _id: itemID } } },
+      function (err, result) {
+        if(!err) res.redirect('/' + titleName);
+      });
+  }
 });
 
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 8000;
+}
 
-app.listen(5500, () => {
+app.listen(port, () => {
   console.log("Server is running on port 5500");
 });
