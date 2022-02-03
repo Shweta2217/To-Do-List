@@ -2,17 +2,17 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const _ = require('lodash');
-// const date = require(__dirname+"/date.js");
 const mongoose = require("mongoose");
+require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
 
-mongoose.connect("mongodb+srv://todo_2217:dugu%40100%26@cluster0.oktgc.mongodb.net/todoDB", { useNewUrlParser: true });
+mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true });
 
-// Defigning Schema For Default TOday PAge
+// Defigning Schema For Default Today PAge
 const todoSchema = mongoose.Schema({
   name: String,
 });
@@ -135,5 +135,5 @@ if (port == null || port == "") {
 }
 
 app.listen(port, () => {
-  console.log("Server is running on port 5500");
+  console.log("Server is running on port : "+port);
 });
